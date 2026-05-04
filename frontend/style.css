@@ -1,0 +1,390 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
+
+/* ── Variables ─────────────────────────────────────────────────────────── */
+:root {
+    --bg: #0b0f14;
+    --panel: #11161d;
+    --border: #1f2a36;
+    --accent: #00e5ff;
+    --good: #7fff6e;
+    --bad: #ff4d4d;
+    --text: #d6e2ef;
+    --muted: #5b6b7c;
+    --mono: 'Space Mono', monospace;
+    --display: 'Syne', sans-serif;
+}
+
+/* ── Reset ─────────────────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────── */
+html,
+body {
+    height: 100%;
+    overflow: hidden; /* Prevent body scroll, everything contained */
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+}
+
+/* ── Top bar ───────────────────────────────────────────────────────────── */
+.topbar {
+    flex-shrink: 0;
+    height: 50px;
+    padding: 0 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 16px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.topbar-badge {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+}
+
+.mobile-menu-btn {
+    display: none;
+    background: rgba(0, 229, 255, 0.1);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--mono);
+    text-transform: uppercase;
+}
+
+/* ── Grid ──────────────────────────────────────────────────────────────── */
+.grid {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    background: var(--border);
+}
+
+/* ── Sidebar ───────────────────────────────────────────────────────────── */
+.sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--panel);
+    padding: 16px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    border-right: 1px solid var(--border);
+}
+
+.section-label {
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+}
+
+/* ── Toggle buttons ────────────────────────────────────────────────────── */
+.toggle-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 6px;
+    background: #141b24;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    transition: all 0.15s;
+}
+
+.toggle-btn .btn-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    flex-shrink: 0;
+}
+
+.toggle-btn[data-active="true"] {
+    color: var(--text);
+    border-color: var(--accent);
+    background: rgba(0, 229, 255, 0.06);
+}
+
+.toggle-btn[data-active="true"] .btn-dot {
+    background: var(--accent);
+    box-shadow: 0 0 6px var(--accent);
+}
+
+/* ── Model buttons ─────────────────────────────────────────────────────── */
+.model-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+
+.model-btn {
+    padding: 10px 8px;
+    background: #141b24;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    transition: all 0.15s;
+}
+
+.model-btn.active {
+    background: rgba(0, 229, 255, 0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* ── Posture label ─────────────────────────────────────────────────────── */
+.posture-label {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 2.8rem;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    margin: 4px 0 8px;
+}
+
+.posture-label.good { color: var(--good); }
+.posture-label.bad { color: var(--bad); }
+.posture-label.none { color: var(--muted); }
+
+/* ── Confidence bar ────────────────────────────────────────────────────── */
+.conf-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.conf-bar {
+    flex: 1;
+    height: 7px;
+    background: var(--border);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.conf-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--good);
+    transition: width 0.25s ease, background 0.25s ease;
+    border-radius: 999px;
+}
+
+.conf-pct {
+    font-size: 11px;
+    color: var(--muted);
+    width: 32px;
+    text-align: right;
+}
+
+/* ── Stat rows ─────────────────────────────────────────────────────────── */
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid #181f28;
+}
+
+.stat-key {
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+}
+
+.stat-val {
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+/* ── Camera cell ───────────────────────────────────────────────────────── */
+.cell-camera {
+    flex: 1;
+    background: #0d1117;
+    position: relative;
+    display: flex;
+}
+
+.camera-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+#video, #overlayCanvas {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* Important: maintains aspect ratio */
+}
+
+#video {
+    z-index: 1;
+    /* optional: flip video if it's mirrored */
+    transform: scaleX(-1);
+}
+
+#overlayCanvas {
+    z-index: 2;
+    pointer-events: none;
+    /* if video is mirrored, canvas must be mirrored to match */
+    transform: scaleX(-1);
+}
+
+/* ── Camera-off overlay ────────────────────────────────────────────────── */
+#cameraOffOverlay {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0d1117;
+    color: var(--muted);
+}
+
+.cam-off-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    letter-spacing: 0.12em;
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+.cam-icon {
+    font-size: 2.5rem;
+    opacity: 0.3;
+}
+
+/* ── Alert Banner ──────────────────────────────────────────────────────── */
+#alertBanner {
+    position: fixed;
+    top: -80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    background: var(--bad);
+    color: #fff;
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.1em;
+    padding: 12px 28px;
+    border-radius: 0 0 12px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: top 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 4px 24px rgba(255, 77, 77, 0.4);
+}
+
+#alertBanner.visible {
+    top: 0;
+}
+
+.alert-icon { font-size: 18px; }
+
+/* ── Mobile Sidebar Drawer Button ──────────────────────────────────────── */
+.close-sidebar-btn {
+    display: none;
+    margin-top: auto;
+    padding: 12px;
+    background: #1f2a36;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────── */
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .mobile-menu-btn {
+        display: block;
+    }
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        right: -300px;
+        width: 280px;
+        height: 100vh;
+        z-index: 1000;
+        box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+        transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .sidebar.open {
+        right: 0;
+    }
+
+    .close-sidebar-btn {
+        display: block;
+    }
+
+    .posture-label {
+        font-size: 2.2rem;
+    }
+}

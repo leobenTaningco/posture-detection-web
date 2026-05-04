@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+env/
+venv/
+.env
+
+# Large Models (over 100MB limit for GitHub)
+backend/models/*.joblib
+backend/models/*.task
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Vercel/Render
+.vercel
+.render

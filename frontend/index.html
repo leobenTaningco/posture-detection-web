@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Posture Monitor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div id="alertBanner">
+        <span class="alert-icon">⚠</span>
+        <span>Fix your posture</span>
+    </div>
+
+    <div class="topbar">
+        <div class="logo">POSTURE</div>
+        <div class="topbar-right">
+            <div id="fpsBadge" class="topbar-badge">— FPS</div>
+            <button id="mobileMenuBtn" class="mobile-menu-btn" onclick="toggleMobileMenu()">☰ Menu</button>
+        </div>
+    </div>
+
+    <div class="grid">
+
+        <div class="sidebar" id="sidebar">
+            <div class="section">
+                <div class="section-label">Controls</div>
+                <button id="btnCamera" onclick="toggleCamera()" class="toggle-btn" data-active="false">
+                    <span class="btn-dot"></span> Camera
+                </button>
+                <button id="btnKP" onclick="toggleKP()" class="toggle-btn" data-active="true">
+                    <span class="btn-dot"></span> Keypoints
+                </button>
+            </div>
+
+            <div class="section">
+                <div class="section-label">Model</div>
+                <div class="model-grid">
+                    <button class="model-btn active" data-model="mlp" onclick="setModel(this)">MLP</button>
+                    <button class="model-btn" data-model="rf" onclick="setModel(this)">RF</button>
+                    <button class="model-btn" data-model="voting" onclick="setModel(this)">Voting</button>
+                    <button class="model-btn" data-model="stacking" onclick="setModel(this)">Stacking</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-label">Posture</div>
+                <div class="posture-label none" id="label">—</div>
+                <div class="conf-wrap">
+                    <div class="conf-bar">
+                        <div class="conf-fill" id="fill"></div>
+                    </div>
+                    <span class="conf-pct" id="confPct">0%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-key">Side</span>
+                    <span class="stat-val" id="side">—</span>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-label">Stats</div>
+                <div class="stat-row">
+                    <span class="stat-key">FPS</span>
+                    <span class="stat-val" id="fpsVal">—</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-key">Confidence</span>
+                    <span class="stat-val" id="confVal">—</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-key">Bad duration</span>
+                    <span class="stat-val" id="badDuration">—</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-key">Good streak</span>
+                    <span class="stat-val" id="goodStreak">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-key">Bad streak</span>
+                    <span class="stat-val" id="badStreak">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-key">Session good</span>
+                    <span class="stat-val" id="sessionGood">0%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-key">Detections</span>
+                    <span class="stat-val" id="detections">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-key">Last correction</span>
+                    <span class="stat-val" id="lastCorrection">—</span>
+                </div>
+            </div>
+            
+            <button class="close-sidebar-btn" onclick="toggleMobileMenu()">Close Menu</button>
+        </div>
+
+        <div class="cell-camera" id="cameraCell">
+            <div class="camera-wrapper">
+                <video id="video" autoplay playsinline muted></video>
+                <canvas id="overlayCanvas"></canvas>
+                <div id="cameraOffOverlay">
+                    <div class="cam-off-inner">
+                        <div class="cam-icon">⊘</div>
+                        <div>Camera off</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Configuration for API base URL via window object -->
+    <script>
+        // In production Vercel deployment, we inject the REACT_APP_BACKEND_URL equivalent
+        // If not set, defaults to local flask port
+        window.BACKEND_URL = "http://localhost:5000";
+    </script>
+    <script src="script.js"></script>
+
+</body>
+
+</html>
