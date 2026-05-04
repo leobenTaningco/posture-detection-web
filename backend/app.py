@@ -14,81 +14,84 @@ app = Flask(__name__)
 # Allow CORS for Vercel deployment
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# ── Google Drive Model Download ─────────────────────────────────────────────
-GDRIVE_FOLDER_ID = "1mbQAhjnTV0jKNp3LGTdzBrSFar8TwIo2"
+# ── Model Configuration ─────────────────────────────────────────────────────
 MODELS_DIR = "models"
+GDRIVE_FOLDER_ID = "1mbQAhjnTV0jKNp3LGTdzBrSFar8TwIo2"
 
-# All expected model files
-EXPECTED_MODEL_FILES = [
-    "rf_mlp_pipeline.joblib",
-    "ensemble_pipeline.joblib",
-    "voting.joblib",
-    "stacking.joblib",
-    "pose_landmarker_lite.task",
-]
+# Models that ship with the repo (committed to git, loaded at startup)
+LOCAL_MODEL_FILES = {
+    "mlp": "rf_mlp_pipeline.joblib",
+    "rf": "ensemble_pipeline.joblib",
+}
 
+# Large models downloaded from Google Drive only when selected
+GDRIVE_MODEL_FILES = {
+    "voting": "voting.joblib",
+    "stacking": "stacking.joblib",
+}
 
-def download_models_from_gdrive():
-    """Download models from Google Drive if they don't exist locally."""
-    os.makedirs(MODELS_DIR, exist_ok=True)
-
-    # Check which files are missing
-    missing = [f for f in EXPECTED_MODEL_FILES
-               if not os.path.exists(os.path.join(MODELS_DIR, f))]
-
-    if not missing:
-        print("✓ All model files already present locally.")
-        return
-
-    print(f"⬇ Missing {len(missing)} model file(s): {missing}")
-    print(f"⬇ Downloading models from Google Drive folder {GDRIVE_FOLDER_ID} ...")
-
-    try:
-        url = f"https://drive.google.com/drive/folders/{GDRIVE_FOLDER_ID}"
-        gdown.download_folder(url, output=MODELS_DIR, quiet=False, use_cookies=False)
-        print("✓ Google Drive download complete.")
-    except Exception as e:
-        print(f"✗ Failed to download from Google Drive: {e}")
-
-    # Verify what we got
-    for f in EXPECTED_MODEL_FILES:
-        path = os.path.join(MODELS_DIR, f)
-        if os.path.exists(path):
-            size_mb = os.path.getsize(path) / (1024 * 1024)
-            print(f"  ✓ {f} ({size_mb:.1f} MB)")
-        else:
-            print(f"  ✗ {f} still missing after download")
+ALL_VALID_MODELS = set(LOCAL_MODEL_FILES) | set(GDRIVE_MODEL_FILES)
 
 
-# Download models on startup
-download_models_from_gdrive()
-
-# ── Load ML Models ──────────────────────────────────────────────────────────
 class DummyModel:
     def predict_proba(self, features):
         return [[0.0, 1.0]]  # Mock output: 100% good posture
 
-MODELS = {}
-model_files = {
-    "mlp": os.path.join(MODELS_DIR, "rf_mlp_pipeline.joblib"),
-    "rf": os.path.join(MODELS_DIR, "ensemble_pipeline.joblib"),
-    "voting": os.path.join(MODELS_DIR, "voting.joblib"),
-    "stacking": os.path.join(MODELS_DIR, "stacking.joblib"),
-}
 
-print("--- Loading ML models ---")
-for key, path in model_files.items():
+def download_model_from_gdrive(filename):
+    """Download a single model file from the shared Google Drive folder."""
+    os.makedirs(MODELS_DIR, exist_ok=True)
+    dest = os.path.join(MODELS_DIR, filename)
+    if os.path.exists(dest):
+        return True
+
+    print(f"⬇ Downloading {filename} from Google Drive ...")
+    try:
+        url = f"https://drive.google.com/drive/folders/{GDRIVE_FOLDER_ID}"
+        gdown.download_folder(url, output=MODELS_DIR, quiet=False, use_cookies=False)
+        if os.path.exists(dest):
+            size_mb = os.path.getsize(dest) / (1024 * 1024)
+            print(f"  ✓ {filename} downloaded ({size_mb:.1f} MB)")
+            return True
+        else:
+            print(f"  ✗ {filename} still missing after download")
+            return False
+    except Exception as e:
+        print(f"  ✗ Failed to download {filename}: {e}")
+        return False
+
+
+def load_model(key):
+    """Load a model by key. Downloads from Google Drive first if needed."""
+    filename = LOCAL_MODEL_FILES.get(key) or GDRIVE_MODEL_FILES.get(key)
+    if not filename:
+        return DummyModel()
+
+    path = os.path.join(MODELS_DIR, filename)
+
+    # If it's a Drive-only model, download it first
+    if key in GDRIVE_MODEL_FILES and not os.path.exists(path):
+        download_model_from_gdrive(filename)
+
     try:
         if os.path.exists(path):
-            MODELS[key] = joblib.load(path)
+            model = joblib.load(path)
             print(f"  [OK] Loaded {key} from {path}")
+            return model
         else:
-            print(f"  [SKIP] {path} not found -> using DummyModel placeholder")
-            MODELS[key] = DummyModel()
+            print(f"  [SKIP] {path} not found -> DummyModel")
+            return DummyModel()
     except Exception as e:
-        print(f"  [FAIL] Failed to load {path}: {e} -> using DummyModel placeholder")
-        MODELS[key] = DummyModel()
-print(f"--- Models ready (default: mlp) ---\n")
+        print(f"  [FAIL] {path}: {e} -> DummyModel")
+        return DummyModel()
+
+
+# ── Load local models at startup (mlp, rf) ──────────────────────────────────
+MODELS = {}
+print("--- Loading ML models ---")
+for key in LOCAL_MODEL_FILES:
+    MODELS[key] = load_model(key)
+print(f"--- Startup models ready (default: mlp) ---\n")
 
 current_model = "mlp"
 bad_since = None

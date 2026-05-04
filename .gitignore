@@ -8,9 +8,9 @@ env/
 venv/
 .env
 
-# Large Models (over 100MB limit for GitHub)
-backend/models/*.joblib
-backend/models/*.task
+# Large Models (over 100MB GitHub limit — downloaded on demand from Google Drive)
+backend/models/stacking.joblib
+backend/models/voting.joblib
 
 # OS
 .DS_Store
