@@ -6,3 +6,4 @@ mediapipe
 joblib
 scikit-learn
 gunicorn
+gdown

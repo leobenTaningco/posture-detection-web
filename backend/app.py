@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 import joblib
 import mediapipe as mp
+import gdown
 from math import atan2, degrees, acos
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -13,17 +14,66 @@ app = Flask(__name__)
 # Allow CORS for Vercel deployment
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-# Load Models
+# ── Google Drive Model Download ─────────────────────────────────────────────
+GDRIVE_FOLDER_ID = "1mbQAhjnTV0jKNp3LGTdzBrSFar8TwIo2"
+MODELS_DIR = "models"
+
+# All expected model files
+EXPECTED_MODEL_FILES = [
+    "rf_mlp_pipeline.joblib",
+    "ensemble_pipeline.joblib",
+    "voting.joblib",
+    "stacking.joblib",
+    "pose_landmarker_lite.task",
+]
+
+
+def download_models_from_gdrive():
+    """Download models from Google Drive if they don't exist locally."""
+    os.makedirs(MODELS_DIR, exist_ok=True)
+
+    # Check which files are missing
+    missing = [f for f in EXPECTED_MODEL_FILES
+               if not os.path.exists(os.path.join(MODELS_DIR, f))]
+
+    if not missing:
+        print("✓ All model files already present locally.")
+        return
+
+    print(f"⬇ Missing {len(missing)} model file(s): {missing}")
+    print(f"⬇ Downloading models from Google Drive folder {GDRIVE_FOLDER_ID} ...")
+
+    try:
+        url = f"https://drive.google.com/drive/folders/{GDRIVE_FOLDER_ID}"
+        gdown.download_folder(url, output=MODELS_DIR, quiet=False, use_cookies=False)
+        print("✓ Google Drive download complete.")
+    except Exception as e:
+        print(f"✗ Failed to download from Google Drive: {e}")
+
+    # Verify what we got
+    for f in EXPECTED_MODEL_FILES:
+        path = os.path.join(MODELS_DIR, f)
+        if os.path.exists(path):
+            size_mb = os.path.getsize(path) / (1024 * 1024)
+            print(f"  ✓ {f} ({size_mb:.1f} MB)")
+        else:
+            print(f"  ✗ {f} still missing after download")
+
+
+# Download models on startup
+download_models_from_gdrive()
+
+# ── Load ML Models ──────────────────────────────────────────────────────────
 class DummyModel:
     def predict_proba(self, features):
         return [[0.0, 1.0]]  # Mock output: 100% good posture
 
 MODELS = {}
 model_files = {
-    "mlp": "models/rf_mlp_pipeline.joblib",
-    "rf": "models/ensemble_pipeline.joblib",
-    "voting": "models/voting.joblib",
-    "stacking": "models/stacking.joblib"
+    "mlp": os.path.join(MODELS_DIR, "rf_mlp_pipeline.joblib"),
+    "rf": os.path.join(MODELS_DIR, "ensemble_pipeline.joblib"),
+    "voting": os.path.join(MODELS_DIR, "voting.joblib"),
+    "stacking": os.path.join(MODELS_DIR, "stacking.joblib"),
 }
 
 print("--- Loading ML models ---")
@@ -43,7 +93,7 @@ print(f"--- Models ready (default: mlp) ---\n")
 current_model = "mlp"
 bad_since = None
 
-MODEL_PATH = "models/pose_landmarker_lite.task"
+MODEL_PATH = os.path.join(MODELS_DIR, "pose_landmarker_lite.task")
 
 BaseOptions = mp.tasks.BaseOptions
 PoseLandmarker = mp.tasks.vision.PoseLandmarker
