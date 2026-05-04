@@ -354,6 +354,22 @@ body {
     letter-spacing: 0.1em;
 }
 
+.close-sidebar-x {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+    transition: color 0.2s;
+}
+
+.close-sidebar-x:hover {
+    color: var(--text);
+}
+
 /* ── Scrollbar ─────────────────────────────────────────────────────────── */
 .sidebar::-webkit-scrollbar { width: 4px; }
 .sidebar::-webkit-scrollbar-track { background: transparent; }
@@ -374,6 +390,7 @@ body {
         z-index: 1000;
         box-shadow: -10px 0 30px rgba(0,0,0,0.5);
         transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        padding-top: 50px; /* Space for the X button */
     }
 
     .sidebar.open {
@@ -382,6 +399,13 @@ body {
 
     .close-sidebar-btn {
         display: block;
+    }
+    
+    .close-sidebar-x {
+        display: block;
+        position: absolute;
+        top: 12px;
+        left: 16px;
     }
 
     .posture-label {
