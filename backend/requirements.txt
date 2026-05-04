@@ -1,8 +1,8 @@
 Flask
 flask-cors
-numpy
-opencv-python-headless
-mediapipe
+numpy<2.0
+opencv-python-headless>=4.8.0,<5.0
+mediapipe>=0.10.9,<0.11
 joblib
 scikit-learn
 gunicorn

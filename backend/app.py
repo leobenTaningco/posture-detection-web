@@ -164,35 +164,65 @@ def set_model():
 def process_frame():
     global bad_since
 
-    data = request.json
-    image_data = data.get("image")
-    if not image_data:
-        return jsonify({"error": "No image provided"}), 400
-
     try:
-        # Decode base64 image
-        header, encoded = image_data.split(",", 1)
-        img_bytes = base64.b64decode(encoded)
-        np_arr = np.frombuffer(img_bytes, np.uint8)
-        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        data = request.json
+        if not data:
+            print("[WARN] Received empty JSON payload in /process_frame")
+            return jsonify({"error": "No JSON payload provided", "status": "error"}), 400
 
-        if frame is None:
-            return jsonify({"error": "Invalid image format"}), 400
+        image_data = data.get("image")
+        if not image_data:
+            print("[WARN] No image data found in request")
+            return jsonify({"error": "No image provided", "status": "error"}), 400
+
+        # Decode base64 image
+        try:
+            header, encoded = image_data.split(",", 1)
+            img_bytes = base64.b64decode(encoded)
+            np_arr = np.frombuffer(img_bytes, np.uint8)
+            frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+            
+            if frame is None:
+                print("[ERROR] cv2.imdecode returned None. Invalid image data.")
+                return jsonify({"error": "Invalid image format", "status": "error"}), 400
+        except Exception as e:
+            print(f"[ERROR] Image decode failed: {e}")
+            return jsonify({"error": "Failed to decode image", "details": str(e), "status": "error"}), 400
 
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w = rgb.shape[:2]
 
-        mp_image = mp.Image(
-            image_format=mp.ImageFormat.SRGB,
-            data=np.ascontiguousarray(rgb),
-        )
+        # Ensure array is safely contiguous and writable before passing to MediaPipe C++ bindings
+        rgb_contiguous = np.ascontiguousarray(rgb, dtype=np.uint8)
 
-        if landmarker:
-            results = landmarker.detect(mp_image)
-        else:
-            class MockResults:
-                pose_landmarks = []
-            results = MockResults()
+        # Safely invoke MediaPipe
+        results = None
+        try:
+            if landmarker:
+                mp_image = mp.Image(
+                    image_format=mp.ImageFormat.SRGB,
+                    data=rgb_contiguous
+                )
+                results = landmarker.detect(mp_image)
+            else:
+                print("[WARN] Landmarker is not initialized. Returning mock results.")
+                class MockResults:
+                    pose_landmarks = []
+                results = MockResults()
+        except Exception as e:
+            # Catch MediaPipe/GLES crashes gracefully
+            print(f"[ERROR] MediaPipe processing failed: {e}")
+            import traceback
+            traceback.print_exc()
+            # Return a valid structured JSON but indicate an error, without throwing a 500 HTTP crash
+            return jsonify({
+                "status": "error",
+                "error": "MediaPipe engine failure",
+                "details": str(e),
+                "prob": 0.0,
+                "label": "Engine Error",
+                "bad_duration": 0
+            }), 200
 
         latest_status = "none"
         latest_prob = 0.0
@@ -200,7 +230,7 @@ def process_frame():
         latest_label = "No Detection"
         keypoints = None
 
-        if results.pose_landmarks:
+        if results and hasattr(results, 'pose_landmarks') and results.pose_landmarks:
             lms = results.pose_landmarks[0]
 
             left_vis = lms[7].visibility + lms[11].visibility + lms[23].visibility
@@ -240,28 +270,31 @@ def process_frame():
                     w,
                 )
 
-                model = MODELS[current_model]
-                prob = model.predict_proba(features)[0][1]
+                try:
+                    model = MODELS.get(current_model, DummyModel())
+                    prob = model.predict_proba(features)[0][1]
+                    
+                    latest_prob = float(prob)
+                    latest_status = "good" if prob > 0.5 else "bad"
+                    latest_label = "GOOD POSTURE" if prob > 0.5 else "BAD POSTURE"
 
-                latest_prob = float(prob)
-                latest_status = "good" if prob > 0.5 else "bad"
-                latest_label = "GOOD POSTURE" if prob > 0.5 else "BAD POSTURE"
+                    if latest_status == "bad":
+                        if bad_since is None:
+                            bad_since = time.time()
+                    else:
+                        bad_since = None
 
-                if latest_status == "bad":
-                    if bad_since is None:
-                        bad_since = time.time()
-                else:
-                    bad_since = None
+                    torso_center_x = (shoulder[0] + hip[0]) / 2
+                    dx = nose[0] - torso_center_x
 
-                torso_center_x = (shoulder[0] + hip[0]) / 2
-                dx = nose[0] - torso_center_x
-
-                if abs(dx) < 15:
-                    latest_side = "center"
-                elif dx < 0:
-                    latest_side = "left"
-                else:
-                    latest_side = "right"
+                    if abs(dx) < 15:
+                        latest_side = "center"
+                    elif dx < 0:
+                        latest_side = "left"
+                    else:
+                        latest_side = "right"
+                except Exception as e:
+                    print(f"[ERROR] ML Model prediction failed: {e}")
             else:
                 bad_since = None
                 
@@ -287,8 +320,13 @@ def process_frame():
 
     except Exception as e:
         import traceback
-        print(traceback.format_exc())
-        return jsonify({"error": str(e)}), 500
+        print(f"[FATAL ERROR] Unexpected crash in process_frame: {e}")
+        traceback.print_exc()
+        return jsonify({
+            "status": "error",
+            "error": "Internal Server Error",
+            "details": str(e)
+        }), 200
 
 @app.route("/health")
 def health():
